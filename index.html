@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SULTAN KEBAP</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial, sans-serif;
+background:#050505;
+overflow-x:hidden;
+color:white;
+text-align:center;
+user-select: none; 
+}
+
+/* HAREKETLİ ARKAPLAN */
+.bg{
+position:fixed;
+width:100%;
+height:100%;
+top:0;
+left:0;
+overflow:hidden;
+z-index:-1;
+}
+
+.circle{
+position:absolute;
+border-radius:50%;
+background:rgba(0,255,120,0.15);
+animation:move 15s linear infinite;
+}
+
+.circle:nth-child(1){ width:200px; height:200px; left:10%; top:20%; }
+.circle:nth-child(2){ width:300px; height:300px; right:10%; top:50%; }
+.circle:nth-child(3){ width:150px; height:150px; left:50%; bottom:10%; }
+
+@keyframes move{
+0%{ transform:translateY(0px) rotate(0deg); }
+100%{ transform:translateY(-100px) rotate(360deg); }
+}
+
+/* AÇILIŞ */
+#intro{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:black;
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:9999;
+animation:introHide 3s forwards;
+}
+
+#introText{
+font-size:50px;
+font-weight:bold;
+color:#00ff88;
+text-shadow: 0 0 10px #00ff88, 0 0 30px #00ff88;
+animation:pulse 1s infinite alternate;
+}
+
+@keyframes introHide{
+0%{opacity:1;}
+80%{opacity:1;}
+100%{ opacity:0; visibility:hidden; }
+}
+
+@keyframes pulse{
+from{ transform:scale(1); }
+to{ transform:scale(1.1); }
+}
+
+/* LOGO */
+.logo{
+font-size:42px;
+font-weight:bold;
+margin-top:20px;
+color:#00ff88;
+text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88;
+animation:logoGlow 1s infinite alternate;
+}
+
+@keyframes logoGlow{
+from{ text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88; }
+to{ text-shadow: 0 0 40px #00ff88, 0 0 80px #00ff88; }
+}
+
+/* CARD */
+.card{
+background:rgba(20,20,20,0.95);
+width:90%;
+max-width:360px;
+margin:15px auto;
+padding:20px;
+border-radius:20px;
+box-shadow: 0 0 10px rgba(0,255,120,0.2), 0 0 40px rgba(0,255,120,0.2);
+backdrop-filter:blur(10px);
+}
+
+/* INPUT */
+input{
+width:100%;
+padding:12px;
+margin:6px 0;
+border:none;
+border-radius:12px;
+background:#333;
+color:white;
+font-size:15px;
+box-sizing:border-box;
+}
+
+/* BUTTON */
+button{
+width:100%;
+padding:12px;
+margin:6px 0;
+border:none;
+border-radius:12px;
+background:linear-gradient(45deg,#00c853,#00ff99);
+color:white;
+font-weight:bold;
+font-size:15px;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+transform:scale(1.03);
+box-shadow: 0 0 10px #00ff88, 0 0 40px #00ff88;
+}
+
+.btn-delete {
+background: linear-gradient(45deg, #d32f2f, #f44336);
+padding: 6px 12px;
+font-size: 13px;
+width: auto;
+display: inline-block;
+margin-top: 5px;
+}
+.btn-delete:hover { box-shadow: 0 0 10px #f44336; }
+
+.admin-camp-item {
+background: #222;
+padding: 8px;
+margin: 5px 0;
+border-radius: 8px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+font-size: 14px;
+text-align: left;
+}
+
+#userPanel, #adminPanel, #registerBox{ display:none; }
+.big{ font-size:36px; font-weight:bold; margin:10px 0; color:#00ff88; text-shadow: 0 0 10px #00ff88; }
+.rank{ font-size:24px; margin:10px 0; }
+.small{ opacity:0.7; font-size:13px; }
+hr{ border:0; border-top:1px solid #444; margin:15px 0; }
+
+/* BİLDİRİM */
+#notif{
+position:fixed;
+top:20px;
+right:-400px;
+background:#00c853;
+padding:15px 25px;
+border-radius:12px;
+font-weight:bold;
+transition:0.5s;
+z-index:99999;
+box-shadow: 0 0 10px #00ff88;
+}
+
+/* ÇARK */
+#wheel{
+width:220px;
+height:220px;
+margin:20px auto;
+border-radius:50%;
+border:8px solid #00ff88;
+background: conic-gradient(
+#00ff88 0deg 60deg, #00c853 60deg 120deg, #00ff88 120deg 180deg,
+#00c853 180deg 240deg, #00ff88 240deg 300deg, #00c853 300deg 360deg
+);
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:22px;
+font-weight:bold;
+transition:4s cubic-bezier(.17,.67,.12,.99);
+box-shadow: 0 0 20px #00ff88;
+}
+#wheelResult{ font-size:16px; margin-top:15px; font-weight:bold; color:#ff4444; }
+</style>
+</head>
+
+<body>
+
+<div class="bg">
+<div class="circle"></div>
+<div class="circle"></div>
+<div class="circle"></div>
+</div>
+
+<div id="notif"></div>
+<div id="intro"><div id="introText">🏦 SULTAN</div></div>
+<div class="logo">🏦 SULTAN KEBAP 🏦</div>
+
+<!-- LOGIN -->
+<div class="card" id="loginBox">
+<h3>🔐 Giriş Yap</h3>
+<input id="loginEmail" type="email" placeholder="Gmail Adresi (@gmail.com)">
+<input id="loginPass" type="password" placeholder="Şifre (En az 6 Hane)">
+<button id="btn-login">🚀 Giriş Yap</button>
+<hr>
+<button id="btn-goto-register">✨ Kayıt Ol</button>
+<button id="btn-goto-admin">👑 Admin Girişi</button>
+</div>
+
+<!-- REGISTER -->
+<div class="card" id="registerBox">
+<h3>📝 Kayıt Ol</h3>
+<input id="regName" type="text" placeholder="İsim Soyisim">
+<input id="regEmail" type="email" placeholder="Gmail Adresi (@gmail.com)">
+<input id="regPass" type="password" placeholder="Şifre (En az 6 Karakter)">
+<input id="regPhone" type="text" maxlength="11" placeholder="Telefon (05xx)">
+<button id="btn-register">✅ Kayıt Ol</button>
+<button class="btn-logout">🏠 Anasayfa</button>
+</div>
+
+<!-- USER -->
+<div class="card" id="userPanel">
+<h2>👤 Kullanıcı Paneli</h2>
+<div id="userInfo" class="small"></div>
+<div id="puan" class="big">0 PUAN</div>
+<div id="rankBox" class="rank">🥉 BRONZ</div>
+<hr>
+<h3>🎡 HAFTALIK ŞANSLI ÇARK</h3>
+<div id="wheel">🎁</div>
+<button id="btn-spin">🎰 ÇARKI ÇEVİR</button>
+<div id="wheelResult"></div>
+<hr>
+<h3>📢 Kampanyalar</h3>
+<div id="campaignList"></div>
+<hr>
+<h3>⭐ Değerlendirme Hizmeti</h3>
+<div id="reviewArea">Değerlendirme bulunmuyor</div>
+<button class="btn-logout">🚪 Çıkış Yap</button>
+</div>
+
+<!-- ADMIN -->
+<div class="card" id="adminPanel">
+<h2>👑 Admin Paneli</h2>
+<h3>👥 Kullanıcılar</h3>
+<div id="users"></div>
+<hr>
+<h3>💸 PUAN YÜKLE</h3>
+<input id="targetEmail" placeholder="Kullanıcı Gmail Adresi">
+<input id="point" placeholder="+10 / -10">
+<button id="btn-add-point">💰 PUAN YÜKLE</button>
+<hr>
+<h3>📢 Kampanya Yönetimi</h3>
+<input id="campText" placeholder="Yeni Kampanya Yazın">
+<button id="btn-add-campaign">➕ Kampanya Ekle</button>
+<div id="adminCampaignList" style="margin-top:10px;"></div>
+<hr>
+<h3>⭐ Değerlendirme Sistemi</h3>
+<input id="reviewEmail" placeholder="Kullanıcı Gmail Adresi">
+<input id="reviewCode" placeholder="6 Haneli Kod">
+<button id="btn-give-review-code">✅ Kod Ver</button>
+<hr>
+<h3>📝 Değerlendirmeler</h3>
+<div id="reviewList"></div>
+<button class="btn-logout">🚪 Çıkış Yap</button>
+</div>
+
+<!-- FIREBASE SDK MODÜLLERİ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, set, get, child, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyACjmk91oUymbQtU0cxatstU3teWUY2HGk",
+authDomain: "sultan-kebap.firebaseapp.com",
+databaseURL: "https://sultan-kebap-default-rtdb.europe-west1.firebasedatabase.app",
+projectId: "sultan-kebap",
+storageBucket: "sultan-kebap.firebasestorage.app",
+messagingSenderId: "133958671649",
+appId: "1:133958671649:web:be0664b453fa85c317f260"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// HTML Elemanları
+const notif = document.getElementById("notif");
+const loginBox = document.getElementById("loginBox");
+const registerBox = document.getElementById("registerBox");
+const userPanel = document.getElementById("userPanel");
+const adminPanel = document.getElementById("adminPanel");
+const userInfo = document.getElementById("userInfo");
+const puan = document.getElementById("puan");
+const rankBox = document.getElementById("rankBox");
+const wheel = document.getElementById("wheel");
+const wheelResult = document.getElementById("wheelResult");
+const campaignList = document.getElementById("campaignList");
+const adminCampaignList = document.getElementById("adminCampaignList");
+const reviewArea = document.getElementById("reviewArea");
+const usersList = document.getElementById("users");
+const reviewList = document.getElementById("reviewList");
+
+let activeUserKey = null;
+let serverTimeOffset = 0; // Zaman hilesini engelleyen değişken
+
+// KORUMA SİSTEMLERİ (F12 ve Sağ Tık Engeli)
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.onkeydown = function(e) {
+  if(e.keyCode == 123) return false;
+  if(e.ctrlKey && e.shiftKey && e.keyCode == 73) return false;
+  if(e.ctrlKey && e.keyCode == 85) return false;
+}
+
+// Gizli Şifre Çözücü Fonksiyon (Kaynak kodda düz metin görünmesin diye)
+function getSecureKey(arr) {
+    return arr.map(code => String.fromCharCode(code)).join('');
+}
+
+// İnternet Sunucu Saatini Çekme (Telefon saatini ileri alma hilesini bozma)
+onValue(ref(db, ".info/serverTimeOffset"), (snapshot) => {
+    serverTimeOffset = snapshot.val() || 0;
+});
+
+function getRealTime() {
+    return Date.now() + serverTimeOffset;
+}
+
+function encodeEmail(email) { return email.replace(/\./g, ','); }
+function decodeEmail(email) { return email.replace(/,/g, '.'); }
+
+function showNotif(text){
+notif.innerText = text;
+notif.style.right = "20px";
+setTimeout(() => { notif.style.right = "-400px"; }, 3000);
+}
+
+function getRank(puanVal){
+if(puanVal >= 1000) return "💎 ELMAS";
+if(puanVal >= 500) return "🥇 ALTIN";
+if(puanVal >= 250) return "🥈 GÜMÜŞ";
+return "🥉 BRONZ";
+}
+
+// ==================== EVENT LISTENERS ====================
+
+document.getElementById("btn-goto-register").addEventListener("click", () => {
+    loginBox.style.display = "none"; registerBox.style.display = "block";
+});
+
+document.getElementById("btn-goto-admin").addEventListener("click", () => {
+    let u = prompt("Admin Kullanıcı Adı");
+    let p = prompt("Şifre");
+    
+    // Maskelenmiş Güvenli Admin Bilgileri
+    let sUser = getSecureKey([83, 117, 108, 116, 97, 110, 98, 97, 110, 107, 97, 99, 105, 108, 105, 107, 48, 52]); // Sultanbankacilik04
+    let sPass = getSecureKey([49, 55, 56, 52, 48, 48]); // 178400
+    
+    if(u === sUser && p === sPass){
+        loginBox.style.display = "none";
+        registerBox.style.display = "none";
+        userPanel.style.display = "none";
+        adminPanel.style.display = "block";
+        loadUsers();
+        loadAdminCampaigns();
+        loadReviews();
+        showNotif("👑 Admin Girişi Başarılı");
+    } else { alert("Hatalı admin girişi!"); }
+});
+
+document.querySelectorAll(".btn-logout").forEach(btn => {
+    btn.addEventListener("click", () => {
+        loginBox.style.display = "block";
+        registerBox.style.display = "none";
+        userPanel.style.display = "none";
+        adminPanel.style.display = "none";
+        activeUserKey = null;
+        wheelResult.innerHTML = "";
+        wheel.style.transform = "rotate(0deg)";
+        document.getElementById("loginEmail").value = "";
+        document.getElementById("loginPass").value = "";
+    });
+});
+
+document.getElementById("btn-register").addEventListener("click", async () => {
+    let name = document.getElementById("regName").value.trim();
+    let email = document.getElementById("regEmail").value.trim().toLowerCase();
+    let pass = document.getElementById("regPass").value.trim();
+    let phone = document.getElementById("regPhone").value.trim();
+
+    if(localStorage.getItem("sultan_device_locked")){
+        alert("❌ HATA: Bu cihazdan zaten bir üyelik oluşturulmuş!");
+        return;
+    }
+    if(!name || !email || !pass || !phone){ alert("Lütfen tüm alanları doldurun."); return; }
+    
+    if(!email.endsWith("@gmail.com")){ 
+        alert("❌ Sadece geçerli bir @gmail.com adresi ile kayıt olabilirsiniz!"); 
+        return; 
+    }
+    
+    if(pass.length < 6){ alert("Şifre en az 6 karakter olmalıdır."); return; }
+
+    const encodedEmail = encodeEmail(email);
+    const snapshotEmail = await get(child(ref(db), `users/${encodedEmail}`));
+    if(snapshotEmail.exists()){ alert("Bu e-posta adresi zaten kayıtlı."); return; }
+
+    set(ref(db, 'users/' + encodedEmail), {
+        name, email, pass, phone, puan: 0, lastSpinTime: 0
+    }).then(() => {
+        localStorage.setItem("sultan_device_locked", "true");
+        showNotif("🎉 Kayıt başarılı!");
+        document.querySelector(".btn-logout").click();
+    }).catch(() => { alert("Kayıt sırasında hata oluştu."); });
+});
+
+document.getElementById("btn-login").addEventListener("click", () => {
+    let email = document.getElementById("loginEmail").value.trim().toLowerCase();
+    let pass = document.getElementById("loginPass").value.trim();
+    let encodedEmail = encodeEmail(email);
+
+    get(child(ref(db), `users/${encodedEmail}`)).then((snapshot) => {
+        if (snapshot.exists()) {
+            let user = snapshot.val();
+            if(user.pass === pass){
+                activeUserKey = encodedEmail;
+                loginBox.style.display = "none";
+                registerBox.style.display = "none";
+                adminPanel.style.display = "none";
+                userPanel.style.display = "block";
+
+                onValue(ref(db, `users/${encodedEmail}`), (userSnap) => {
+                    if(userSnap.exists()){
+                        let uData = userSnap.val();
+                        userInfo.innerText = "👤 " + uData.name + " | 📧 " + uData.email;
+                        puan.innerText = uData.puan + " PUAN";
+                        rankBox.innerText = getRank(uData.puan);
+                        loadReview(uData);
+                        checkWheelTime(uData);
+                    }
+                });
+
+                loadCampaigns();
+                showNotif("👋 Hoşgeldin " + user.name);
+            } else { alert("Hatalı Şifre!"); }
+        } else { alert("Kullanıcı Bulunamadı!"); }
+    });
+});
+
+function checkWheelTime(user) {
+    let now = getRealTime(); // Gerçek internet saati hile koruması
+    let lastSpin = user.lastSpinTime || 0;
+    let oneWeek = 7 * 24 * 60 * 60 * 1000;
+
+    if(lastSpin !== 0 && (now - lastSpin < oneWeek)) {
+        let diff = oneWeek - (now - lastSpin);
+        let days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        wheelResult.style.color = "#ff4444";
+        wheelResult.innerHTML = `❌ Bu hafta çarkı çevirdiniz.<br>Kalan Süre: ${days} gün, ${hours} saat, ${minutes} dakika.`;
+        return false;
+    } else {
+        wheelResult.style.color = "#00ff88";
+        wheelResult.innerHTML = "✨ Çark hakkınız hazır! Şansınızı deneyin.";
+        return true;
+    }
+}
+
+document.getElementById("btn-spin").addEventListener("click", () => {
+    if(!activeUserKey) return;
+    get(child(ref(db), `users/${activeUserKey}`)).then((snapshot) => {
+        let user = snapshot.val();
+        
+        if(!checkWheelTime(user)) {
+            showNotif("❌ Henüz süreniz dolmadı!");
+            return;
+        }
+
+        wheel.style.transform = "rotate(2500deg)";
+        let gifts = [5, 10, 20, 30, 50, 10];
+        let random = gifts[Math.floor(Math.random() * gifts.length)];
+        
+        setTimeout(() => {
+            let yeniPuan = (user.puan || 0) + random;
+            update(ref(db, `users/${activeUserKey}`), { 
+                puan: yeniPuan, 
+                lastSpinTime: getRealTime() // Zaman damgası gerçek saate göre atılıyor
+            });
+            wheelResult.style.color = "#00ff88";
+            wheelResult.innerHTML = "🎉 +" + random + " PUAN KAZANDINIZ!";
+            showNotif("🎁 +" + random + " PUAN Kazandın");
+        }, 4000);
+    });
+});
+
+document.getElementById("btn-add-campaign").addEventListener("click", () => {
+    let text = document.getElementById("campText").value.trim();
+    if(!text) return;
+    get(child(ref(db), 'campaigns')).then((snapshot) => {
+        let old = snapshot.val() || [];
+        old.push(text);
+        set(ref(db, 'campaigns'), old).then(() => {
+            document.getElementById("campText").value = "";
+            showNotif("📢 Kampanya Eklendi");
+        });
+    });
+});
+
+document.getElementById("btn-add-point").addEventListener("click", () => {
+    let email = document.getElementById("targetEmail").value.trim().toLowerCase();
+    let p = Number(document.getElementById("point").value);
+    let encodedEmail = encodeEmail(email);
+
+    get(child(ref(db), `users/${encodedEmail}`)).then((snapshot) => { 
+        if(snapshot.exists()){ 
+            let currentPuan = snapshot.val().puan || 0; 
+            update(ref(db, `users/${encodedEmail}`), { puan: currentPuan + p }).then(() => {
+                showNotif("💸 Puan güncellendi");
+                document.getElementById("targetEmail").value = "";
+                document.getElementById("point").value = "";
+            });
+        } else { alert("Kullanıcı bulunamadı"); }
+    });
+});
+
+document.getElementById("btn-give-review-code").addEventListener("click", () => {
+    let email = document.getElementById("reviewEmail").value.trim().toLowerCase();
+    let code = document.getElementById("reviewCode").value.trim();
+    let encodedEmail = encodeEmail(email);
+
+    update(ref(db, `users/${encodedEmail}`), {
+        reviewCode: code,
+        reviewDate: new Date().toLocaleString("tr-TR")
+    }).then(() => {
+        showNotif("⭐ Kod verildi");
+        document.getElementById("reviewEmail").value = "";
+        document.getElementById("reviewCode").value = "";
+    });
+});
+
+// ==================== YARDIMCI FONKSİYONLAR ====================
+
+function loadUsers(){
+    onValue(ref(db, 'users'), (snapshot) => {
+        usersList.innerHTML = "";
+        if(snapshot.exists()){
+            let usersData = snapshot.val();
+            for(let key in usersData){
+                let u = usersData[key];
+                let userDiv = document.createElement("div");
+                userDiv.innerHTML = `👤 ${u.name}<br>📧 ${u.email}<br>📱 ${u.phone}<br>💰 ${u.puan} PUAN<br>`;
+                
+                let delBtn = document.createElement("button");
+                delBtn.className = "btn-delete";
+                delBtn.innerText = "❌ Kullanıcıyı Sil";
+                delBtn.onclick = function() {
+                    if(confirm("Bu kullanıcı silinsin mi?")){
+                        remove(ref(db, `users/${key}`)).then(() => {
+                            localStorage.removeItem("sultan_device_locked");
+                            showNotif("🗑️ Kullanıcı silindi");
+                        });
+                    }
+                };
+                userDiv.appendChild(delBtn);
+                userDiv.appendChild(document.createElement("hr"));
+                usersList.appendChild(userDiv);
+            }
+        } else { usersList.innerHTML = "Kayıtlı kullanıcı bulunmuyor."; }
+    });
+}
+
+function loadCampaigns(){
+    onValue(ref(db, 'campaigns'), (snapshot) => {
+        let data = snapshot.val() || [];
+        campaignList.innerHTML = data.length > 0 ? data.map(c => "🎁 " + c).join("<br><br>") : "Aktif kampanya bulunmuyor.";
+    });
+}
+
+function loadAdminCampaigns(){
+    onValue(ref(db, 'campaigns'), (snapshot) => {
+        adminCampaignList.innerHTML = "";
+        let data = snapshot.val() || [];
+        if(data.length === 0) { adminCampaignList.innerHTML = "Eklenmiş kampanya bulunmuyor."; return; }
+        
+        data.forEach((camp, index) => {
+            let div = document.createElement("div");
+            div.className = "admin-camp-item";
+            div.innerHTML = `<span>🎁 ${camp}</span>`;
+            
+            let delBtn = document.createElement("button");
+            delBtn.className = "btn-delete";
+            delBtn.style.margin = "0";
+            delBtn.innerText = "🗑️ Sil";
+            delBtn.onclick = function() {
+                data.splice(index, 1);
+                set(ref(db, 'campaigns'), data).then(() => { showNotif("🗑️ Kampanya silindi"); });
+            };
+            div.appendChild(delBtn);
+            adminCampaignList.appendChild(div);
+        });
+    });
+}
+
+function loadReview(user){
+    if(user.reviewCode){
+        let encodedEmail = encodeEmail(user.email);
+        reviewArea.innerHTML = `📅 ${user.reviewDate} <br><br>`;
+        let btn = document.createElement("button");
+        btn.innerText = "⭐ Değerlendir";
+        btn.onclick = function() {
+            let text = prompt("Değerlendirmenizi yazın");
+            if(!text) return;
+            get(child(ref(db), 'reviews')).then((snapshot) => {
+                let all = snapshot.val() || [];
+                all.push({ email: decodeEmail(encodedEmail), text: text, date: new Date().toLocaleString("tr-TR") });
+                set(ref(db, 'reviews'), all).then(() => {
+                    update(ref(db, `users/${encodedEmail}`), { reviewCode: null });
+                    showNotif("🎉 Değerlendirme gönderildi");
+                });
+            });
+        };
+        reviewArea.appendChild(btn);
+    } else { reviewArea.innerHTML = "Değerlendirme bulunmuyor"; }
+}
+
+function loadReviews(){
+    onValue(ref(db, 'reviews'), (snapshot) => {
+        let data = snapshot.val() || [];
+        reviewList.innerHTML = data.map(r => `👤 <b>${r.email}</b><br>📅 ${r.date}<br>📝 ${r.text}<hr>`).join("");
+    });
+}
+</script>
+
+</body>
+  </html>
