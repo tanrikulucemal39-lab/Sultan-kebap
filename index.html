@@ -214,7 +214,6 @@ box-shadow: 0 0 20px #00ff88;
 <div id="intro"><div id="introText">🏦 SULTAN</div></div>
 <div class="logo">🏦 SULTAN KEBAP 🏦</div>
 
-<!-- LOGIN -->
 <div class="card" id="loginBox">
 <h3>🔐 Giriş Yap</h3>
 <input id="loginEmail" type="email" placeholder="Gmail Adresi (@gmail.com)">
@@ -225,7 +224,6 @@ box-shadow: 0 0 20px #00ff88;
 <button id="btn-goto-admin">👑 Admin Girişi</button>
 </div>
 
-<!-- REGISTER -->
 <div class="card" id="registerBox">
 <h3>📝 Kayıt Ol</h3>
 <input id="regName" type="text" placeholder="İsim Soyisim">
@@ -236,7 +234,6 @@ box-shadow: 0 0 20px #00ff88;
 <button class="btn-logout">🏠 Anasayfa</button>
 </div>
 
-<!-- USER -->
 <div class="card" id="userPanel">
 <h2>👤 Kullanıcı Paneli</h2>
 <div id="userInfo" class="small"></div>
@@ -256,7 +253,6 @@ box-shadow: 0 0 20px #00ff88;
 <button class="btn-logout">🚪 Çıkış Yap</button>
 </div>
 
-<!-- ADMIN -->
 <div class="card" id="adminPanel">
 <h2>👑 Admin Paneli</h2>
 <h3>👥 Kullanıcılar</h3>
@@ -282,7 +278,6 @@ box-shadow: 0 0 20px #00ff88;
 <button class="btn-logout">🚪 Çıkış Yap</button>
 </div>
 
-<!-- FIREBASE SDK MODÜLLERİ -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, get, child, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -404,27 +399,41 @@ document.getElementById("btn-register").addEventListener("click", async () => {
     let pass = document.getElementById("regPass").value.trim();
     let phone = document.getElementById("regPhone").value.trim();
 
-    if(localStorage.getItem("sultan_device_locked")){
-        alert("❌ HATA: Bu cihazdan zaten bir üyelik oluşturulmuş!");
-        return;
+    // 1. Her telefona özel bir Cihaz Kimliği atıyoruz
+    let deviceId = localStorage.getItem("sultan_device_id");
+    if(!deviceId){
+        deviceId = "dev_" + Math.random().toString(36).substring(2, 11);
+        localStorage.setItem("sultan_device_id", deviceId);
     }
+
     if(!name || !email || !pass || !phone){ alert("Lütfen tüm alanları doldurun."); return; }
-    
-    if(!email.endsWith("@gmail.com")){ 
-        alert("❌ Sadece geçerli bir @gmail.com adresi ile kayıt olabilirsiniz!"); 
-        return; 
-    }
-    
+    if(!email.endsWith("@gmail.com")){ alert("❌ Sadece geçerli bir @gmail.com adresi ile kayıt olabilirsiniz!"); return; }
     if(pass.length < 6){ alert("Şifre en az 6 karakter olmalıdır."); return; }
+
+    // 2. Akıllı Dinamik Cihaz Kontrolü
+    const deviceSnap = await get(child(ref(db), `devices/${deviceId}`));
+    if(deviceSnap.exists()){
+        let linkedEmail = deviceSnap.val();
+        // Bu cihaza bağlı olan kullanıcı veritabanında HALA duruyor mu?
+        const userCheck = await get(child(ref(db), `users/${linkedEmail}`));
+        if(userCheck.exists()){
+            // Eğer duruyorsa, yeni kayıt engellenir!
+            alert("❌ HATA: Bu cihazdan zaten aktif bir üyelik bulunuyor!");
+            return;
+        }
+        // Eğer kullanıcı veritabanında YOKSA (yani sen admin panelinden sildiysen), kod buradan aşağı akar ve kayda izin verir!
+    }
 
     const encodedEmail = encodeEmail(email);
     const snapshotEmail = await get(child(ref(db), `users/${encodedEmail}`));
     if(snapshotEmail.exists()){ alert("Bu e-posta adresi zaten kayıtlı."); return; }
 
+    // 3. Verileri Kaydet (Cihaz bilgisini de ekliyoruz)
     set(ref(db, 'users/' + encodedEmail), {
-        name, email, pass, phone, puan: 0, lastSpinTime: 0
+        name, email, pass, phone, puan: 0, lastSpinTime: 0, deviceId: deviceId
     }).then(() => {
-        localStorage.setItem("sultan_device_locked", "true");
+        // Cihazı bu e-posta adresiyle veritabanında eşleştiriyoruz
+        set(ref(db, 'devices/' + deviceId), encodedEmail);
         showNotif("🎉 Kayıt başarılı!");
         document.querySelector(".btn-logout").click();
     }).catch(() => { alert("Kayıt sırasında hata oluştu."); });
@@ -570,11 +579,17 @@ function loadUsers(){
                 let delBtn = document.createElement("button");
                 delBtn.className = "btn-delete";
                 delBtn.innerText = "❌ Kullanıcıyı Sil";
-                delBtn.onclick = function() {
+                
+                // GÜNCELLENEN ASYNC SİLME FONKSİYONU
+                delBtn.onclick = async function() {
                     if(confirm("Bu kullanıcı silinsin mi?")){
+                        // Eğer kullanıcının kayıtlı cihaz ID'si varsa, veritabanındaki cihaz kilidini de uçuruyoruz
+                        if(u.deviceId) {
+                            await remove(ref(db, `devices/${u.deviceId}`));
+                        }
+                        // Kullanıcıyı veritabanından siliyoruz
                         remove(ref(db, `users/${key}`)).then(() => {
-                            localStorage.removeItem("sultan_device_locked");
-                            showNotif("🗑️ Kullanıcı silindi");
+                            showNotif("🗑️ Kullanıcı ve Cihaz Kilidi Başarıyla Silindi");
                         });
                     }
                 };
@@ -649,4 +664,4 @@ function loadReviews(){
 </script>
 
 </body>
-  </html>
+</html>
