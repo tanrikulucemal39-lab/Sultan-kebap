@@ -214,6 +214,7 @@ box-shadow: 0 0 20px #00ff88;
 <div id="intro"><div id="introText">🏦 SULTAN</div></div>
 <div class="logo">🏦 SULTAN KEBAP 🏦</div>
 
+<!-- LOGIN -->
 <div class="card" id="loginBox">
 <h3>🔐 Giriş Yap</h3>
 <input id="loginEmail" type="email" placeholder="Gmail Adresi (@gmail.com)">
@@ -224,6 +225,7 @@ box-shadow: 0 0 20px #00ff88;
 <button id="btn-goto-admin">👑 Admin Girişi</button>
 </div>
 
+<!-- REGISTER -->
 <div class="card" id="registerBox">
 <h3>📝 Kayıt Ol</h3>
 <input id="regName" type="text" placeholder="İsim Soyisim">
@@ -234,6 +236,7 @@ box-shadow: 0 0 20px #00ff88;
 <button class="btn-logout">🏠 Anasayfa</button>
 </div>
 
+<!-- USER -->
 <div class="card" id="userPanel">
 <h2>👤 Kullanıcı Paneli</h2>
 <div id="userInfo" class="small"></div>
@@ -253,6 +256,7 @@ box-shadow: 0 0 20px #00ff88;
 <button class="btn-logout">🚪 Çıkış Yap</button>
 </div>
 
+<!-- ADMIN -->
 <div class="card" id="adminPanel">
 <h2>👑 Admin Paneli</h2>
 <h3>👥 Kullanıcılar</h3>
@@ -278,6 +282,7 @@ box-shadow: 0 0 20px #00ff88;
 <button class="btn-logout">🚪 Çıkış Yap</button>
 </div>
 
+<!-- FIREBASE SDK MODÜLLERİ -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, get, child, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -313,7 +318,7 @@ const usersList = document.getElementById("users");
 const reviewList = document.getElementById("reviewList");
 
 let activeUserKey = null;
-let serverTimeOffset = 0; // Zaman hilesini engelleyen değişken
+let serverTimeOffset = 0; 
 
 // KORUMA SİSTEMLERİ (F12 ve Sağ Tık Engeli)
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -323,12 +328,10 @@ document.onkeydown = function(e) {
   if(e.ctrlKey && e.keyCode == 85) return false;
 }
 
-// Gizli Şifre Çözücü Fonksiyon (Kaynak kodda düz metin görünmesin diye)
 function getSecureKey(arr) {
     return arr.map(code => String.fromCharCode(code)).join('');
 }
 
-// İnternet Sunucu Saatini Çekme (Telefon saatini ileri alma hilesini bozma)
 onValue(ref(db, ".info/serverTimeOffset"), (snapshot) => {
     serverTimeOffset = snapshot.val() || 0;
 });
@@ -363,9 +366,8 @@ document.getElementById("btn-goto-admin").addEventListener("click", () => {
     let u = prompt("Admin Kullanıcı Adı");
     let p = prompt("Şifre");
     
-    // Maskelenmiş Güvenli Admin Bilgileri
-    let sUser = getSecureKey([83, 117, 108, 116, 97, 110, 98, 97, 110, 107, 97, 99, 105, 108, 105, 107, 48, 52]); // Sultanbankacilik04
-    let sPass = getSecureKey([49, 55, 56, 52, 48, 48]); // 178400
+    let sUser = getSecureKey([83, 117, 108, 116, 97, 110, 98, 97, 110, 107, 97, 99, 105, 108, 105, 107, 48, 52]); 
+    let sPass = getSecureKey([49, 55, 56, 52, 48, 48]); 
     
     if(u === sUser && p === sPass){
         loginBox.style.display = "none";
@@ -393,50 +395,54 @@ document.querySelectorAll(".btn-logout").forEach(btn => {
     });
 });
 
+// KURŞUN GEÇİRMEZ YENİ KAYIT FONKSİYONU
 document.getElementById("btn-register").addEventListener("click", async () => {
-    let name = document.getElementById("regName").value.trim();
-    let email = document.getElementById("regEmail").value.trim().toLowerCase();
-    let pass = document.getElementById("regPass").value.trim();
-    let phone = document.getElementById("regPhone").value.trim();
+    try {
+        let name = document.getElementById("regName").value.trim();
+        let email = document.getElementById("regEmail").value.trim().toLowerCase();
+        let pass = document.getElementById("regPass").value.trim();
+        let phone = document.getElementById("regPhone").value.trim();
 
-    // 1. Her telefona özel bir Cihaz Kimliği atıyoruz
-    let deviceId = localStorage.getItem("sultan_device_id");
-    if(!deviceId){
-        deviceId = "dev_" + Math.random().toString(36).substring(2, 11);
-        localStorage.setItem("sultan_device_id", deviceId);
-    }
+        if(!name || !email || !pass || !phone){ alert("Lütfen tüm alanları doldurun."); return; }
+        if(!email.endsWith("@gmail.com")){ alert("❌ Sadece geçerli bir @gmail.com adresi ile kayıt olabilirsiniz!"); return; }
+        if(pass.length < 6){ alert("Şifre en az 6 karakter olmalıdır."); return; }
 
-    if(!name || !email || !pass || !phone){ alert("Lütfen tüm alanları doldurun."); return; }
-    if(!email.endsWith("@gmail.com")){ alert("❌ Sadece geçerli bir @gmail.com adresi ile kayıt olabilirsiniz!"); return; }
-    if(pass.length < 6){ alert("Şifre en az 6 karakter olmalıdır."); return; }
-
-    // 2. Akıllı Dinamik Cihaz Kontrolü
-    const deviceSnap = await get(child(ref(db), `devices/${deviceId}`));
-    if(deviceSnap.exists()){
-        let linkedEmail = deviceSnap.val();
-        // Bu cihaza bağlı olan kullanıcı veritabanında HALA duruyor mu?
-        const userCheck = await get(child(ref(db), `users/${linkedEmail}`));
-        if(userCheck.exists()){
-            // Eğer duruyorsa, yeni kayıt engellenir!
-            alert("❌ HATA: Bu cihazdan zaten aktif bir üyelik bulunuyor!");
-            return;
+        // Cihaz Kimliği Al veya Oluştur
+        let deviceId = localStorage.getItem("sultan_device_id");
+        if(!deviceId){
+            deviceId = "dev_" + Math.random().toString(36).substring(2, 11);
+            localStorage.setItem("sultan_device_id", deviceId);
         }
-        // Eğer kullanıcı veritabanında YOKSA (yani sen admin panelinden sildiysen), kod buradan aşağı akar ve kayda izin verir!
-    }
 
-    const encodedEmail = encodeEmail(email);
-    const snapshotEmail = await get(child(ref(db), `users/${encodedEmail}`));
-    if(snapshotEmail.exists()){ alert("Bu e-posta adresi zaten kayıtlı."); return; }
+        // Akıllı Dinamik Cihaz Kontrolü
+        const deviceSnap = await get(ref(db, 'devices/' + deviceId));
+        if(deviceSnap.exists()){
+            let linkedEmail = deviceSnap.val();
+            const userCheck = await get(ref(db, 'users/' + linkedEmail));
+            if(userCheck.exists()){
+                alert("❌ HATA: Bu cihazdan zaten aktif bir üyelik bulunuyor!");
+                return;
+            }
+        }
 
-    // 3. Verileri Kaydet (Cihaz bilgisini de ekliyoruz)
-    set(ref(db, 'users/' + encodedEmail), {
-        name, email, pass, phone, puan: 0, lastSpinTime: 0, deviceId: deviceId
-    }).then(() => {
-        // Cihazı bu e-posta adresiyle veritabanında eşleştiriyoruz
-        set(ref(db, 'devices/' + deviceId), encodedEmail);
+        const encodedEmail = encodeEmail(email);
+        const snapshotEmail = await get(ref(db, 'users/' + encodedEmail));
+        if(snapshotEmail.exists()){ alert("Bu e-posta adresi zaten kayıtlı."); return; }
+
+        // Veritabanına Yazma İşlemleri
+        await set(ref(db, 'users/' + encodedEmail), {
+            name, email, pass, phone, puan: 0, lastSpinTime: 0, deviceId: deviceId
+        });
+        
+        await set(ref(db, 'devices/' + deviceId), encodedEmail);
+        
         showNotif("🎉 Kayıt başarılı!");
         document.querySelector(".btn-logout").click();
-    }).catch(() => { alert("Kayıt sırasında hata oluştu."); });
+        
+    } catch (error) {
+        console.error(error);
+        alert("Sistemsel Firebase Hatası: " + error.message);
+    }
 });
 
 document.getElementById("btn-login").addEventListener("click", () => {
@@ -444,7 +450,7 @@ document.getElementById("btn-login").addEventListener("click", () => {
     let pass = document.getElementById("loginPass").value.trim();
     let encodedEmail = encodeEmail(email);
 
-    get(child(ref(db), `users/${encodedEmail}`)).then((snapshot) => {
+    get(ref(db, `users/${encodedEmail}`)).then((snapshot) => {
         if (snapshot.exists()) {
             let user = snapshot.val();
             if(user.pass === pass){
@@ -473,7 +479,7 @@ document.getElementById("btn-login").addEventListener("click", () => {
 });
 
 function checkWheelTime(user) {
-    let now = getRealTime(); // Gerçek internet saati hile koruması
+    let now = getRealTime(); 
     let lastSpin = user.lastSpinTime || 0;
     let oneWeek = 7 * 24 * 60 * 60 * 1000;
 
@@ -494,7 +500,7 @@ function checkWheelTime(user) {
 
 document.getElementById("btn-spin").addEventListener("click", () => {
     if(!activeUserKey) return;
-    get(child(ref(db), `users/${activeUserKey}`)).then((snapshot) => {
+    get(ref(db, `users/${activeUserKey}`)).then((snapshot) => {
         let user = snapshot.val();
         
         if(!checkWheelTime(user)) {
@@ -510,7 +516,7 @@ document.getElementById("btn-spin").addEventListener("click", () => {
             let yeniPuan = (user.puan || 0) + random;
             update(ref(db, `users/${activeUserKey}`), { 
                 puan: yeniPuan, 
-                lastSpinTime: getRealTime() // Zaman damgası gerçek saate göre atılıyor
+                lastSpinTime: getRealTime() 
             });
             wheelResult.style.color = "#00ff88";
             wheelResult.innerHTML = "🎉 +" + random + " PUAN KAZANDINIZ!";
@@ -522,7 +528,7 @@ document.getElementById("btn-spin").addEventListener("click", () => {
 document.getElementById("btn-add-campaign").addEventListener("click", () => {
     let text = document.getElementById("campText").value.trim();
     if(!text) return;
-    get(child(ref(db), 'campaigns')).then((snapshot) => {
+    get(ref(db, 'campaigns')).then((snapshot) => {
         let old = snapshot.val() || [];
         old.push(text);
         set(ref(db, 'campaigns'), old).then(() => {
@@ -537,7 +543,7 @@ document.getElementById("btn-add-point").addEventListener("click", () => {
     let p = Number(document.getElementById("point").value);
     let encodedEmail = encodeEmail(email);
 
-    get(child(ref(db), `users/${encodedEmail}`)).then((snapshot) => { 
+    get(ref(db, `users/${encodedEmail}`)).then((snapshot) => { 
         if(snapshot.exists()){ 
             let currentPuan = snapshot.val().puan || 0; 
             update(ref(db, `users/${encodedEmail}`), { puan: currentPuan + p }).then(() => {
@@ -580,17 +586,17 @@ function loadUsers(){
                 delBtn.className = "btn-delete";
                 delBtn.innerText = "❌ Kullanıcıyı Sil";
                 
-                // GÜNCELLENEN ASYNC SİLME FONKSİYONU
                 delBtn.onclick = async function() {
                     if(confirm("Bu kullanıcı silinsin mi?")){
-                        // Eğer kullanıcının kayıtlı cihaz ID'si varsa, veritabanındaki cihaz kilidini de uçuruyoruz
-                        if(u.deviceId) {
-                            await remove(ref(db, `devices/${u.deviceId}`));
+                        try {
+                            if(u.deviceId) {
+                                await remove(ref(db, 'devices/' + u.deviceId));
+                            }
+                            await remove(ref(db, 'users/' + key));
+                            showNotif("🗑️ Kullanıcı ve Cihaz Kilidi Silindi");
+                        } catch (err) {
+                            alert("Silme hatası: " + err.message);
                         }
-                        // Kullanıcıyı veritabanından siliyoruz
-                        remove(ref(db, `users/${key}`)).then(() => {
-                            showNotif("🗑️ Kullanıcı ve Cihaz Kilidi Başarıyla Silindi");
-                        });
                     }
                 };
                 userDiv.appendChild(delBtn);
@@ -642,7 +648,7 @@ function loadReview(user){
         btn.onclick = function() {
             let text = prompt("Değerlendirmenizi yazın");
             if(!text) return;
-            get(child(ref(db), 'reviews')).then((snapshot) => {
+            get(ref(db, 'reviews')).then((snapshot) => {
                 let all = snapshot.val() || [];
                 all.push({ email: decodeEmail(encodedEmail), text: text, date: new Date().toLocaleString("tr-TR") });
                 set(ref(db, 'reviews'), all).then(() => {
